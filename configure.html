@@ -1,0 +1,176 @@
+<html>
+    <head>
+        <title>RPDB Addon</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Stremio addon for the RPDB Addon">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css">
+        <style>
+            img {
+                border: none;
+                padding: none;
+            }
+            a {
+                text-decoration: none;
+                color: #0078e7;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <center>
+            <img src='/addon-logo.png' style="max-width: 170px; padding-top: 10px" />
+            <div style="padding: 5px 15px; padding-bottom: 3px">
+                An addon to accurately track new / popular / best releases with ratings from the most popular rating websites.
+            </div>
+            <br/><br/>
+            <div id="top-links">
+                <a href="https://ratingposterdb.com/#see-it-in-action" target="_blank">See Screenshots</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;<a href="https://ratingposterdb.com/api-key" target="_blank">Get API Key</a>
+                <br/><br/>
+            </div>
+            <div>
+                <form class="pure-form pure-form-aligned" id="api-key-form" onsubmit="load_api_key();return false">
+                    <fieldset>
+                        <div class="pure-control-group">
+                            <input type="text" id="api-key" placeholder="API Key" />
+                            <span class="pure-form-message-inline">
+                                &nbsp;<button type="submit" class="pure-button pure-button-primary">Load</button>
+                            </span>
+                        </div>
+                    </fieldset>
+                </form>
+                <div id="api-key-success" style="display: none; opacity: 0.7">
+                    <b id="api-key-success-msg"></b>
+                    <br/><br/><br/>
+                </div>
+                <div id="api-key-error-1" style="display: none; opacity: 0.7">
+                    Error: Using an API key is mandatory.
+                    <br/><br/><br/>
+                </div>
+                <div id="api-key-error-2" style="display: none; opacity: 0.7">
+                    Error: API key is not valid, please try again.
+                    <br/><br/><br/>
+                </div>
+            </div>
+            <div id="opts-holder" style="display: none">
+                <div>
+                    <form class="pure-form pure-form-aligned" id="opts-form">
+                        <label for="checkbox-radio-def-opts" class="pure-radio" style="display: inline">
+                            <input type="radio" id="checkbox-radio-def-opts" name="optionsRadios" value="def-opts" checked="" /> Default Settings</label>
+                        &nbsp;&nbsp;
+                        <label for="checkbox-radio-adv-opts" class="pure-radio" style="display: inline">
+                            <input type="radio" id="checkbox-radio-adv-opts" name="optionsRadios" value="adv-opts" /> Advanced Settings</label>
+                    </form>
+                </div>
+                <br/>
+                <form class="pure-form pure-form-aligned" id="adv-opts-form">
+                    <div id="adv-form" style="display: none">
+                        <b>Poster type</b><br/><br/>
+                        <div id="note-tier-1" style="display: none">
+                            <i style="opacity: 0.7">Tier 1 API keys can only use the default poster type.</i>
+                            <br/><br/>
+                        </div>
+                        <label for="checkbox-radio-option-one" class="pure-radio" style="display: inline-block">
+                            <input type="radio" id="checkbox-radio-option-one" name="optionsRadios" value="poster-default" checked="" /> With Ratings (default)</label>
+                        &nbsp;&nbsp;
+                        <label for="checkbox-radio-option-two" class="pure-radio" style="display: inline-block">
+                            <input type="radio" id="checkbox-radio-option-two" name="optionsRadios" value="poster-certs" /> With Ratings + Certifications</label>
+                        <br/>
+                        <label for="checkbox-radio-option-three" class="pure-radio" style="display: inline-block">
+                            <input type="radio" id="checkbox-radio-option-three" name="optionsRadios" value="poster-rt" /> With Rotten Tomatoes + Audience Ratings</label>
+                        &nbsp;&nbsp;
+                        <label for="checkbox-radio-option-four" class="pure-radio" style="display: inline-block">
+                            <input type="radio" id="checkbox-radio-option-four" name="optionsRadios" value="poster-mc" /> With Metacritic + Audience Ratings</label>
+                        <br/><br/><br/>
+                        <b>Catalogs</b><br/><br/>
+                        <label for="catalogs-option-one" class="pure-checkbox" style="display: inline-block">
+                            <input type="checkbox" checked id="catalogs-option-one" class="optionsCheckbox" value="movies" /> Movies</label>
+                        &nbsp;&nbsp;
+                        <label for="catalogs-option-two" class="pure-checkbox" style="display: inline-block">
+                            <input type="checkbox" checked id="catalogs-option-two" class="optionsCheckbox" value="series" /> Series</label>
+                        &nbsp;&nbsp;
+                        <label for="catalogs-option-three" class="pure-checkbox" style="display: inline-block">
+                            <input type="checkbox" checked id="catalogs-option-three" class="optionsCheckbox" value="search" /> Search</label>
+                        <br/>
+                        <label for="catalogs-option-four" class="pure-checkbox">
+                            <input type="checkbox" checked id="catalogs-option-four" class="optionsCheckbox" value="other" /> Other (News / Talk-Shows / Reality-TV / etc)</label>
+                        <br/><br/>
+                    </div>
+                    <a id="addon-install" href="">
+                        <button type="button" class="pure-button pure-button-primary">Install Addon</button>
+                    </a>
+                </form>
+            </div>
+            <br/><br/>
+        </center>
+        <script>
+            var apiKey
+            function load_api_key() {
+                apiKey = $('#api-key').val()
+                if ($('#api-key-error-1').is(':visible'))
+                    $('#api-key-error-1').hide()
+                if ($('#api-key-error-2').is(':visible'))
+                    $('#api-key-error-2').hide()
+                if (!apiKey) {
+                    $('#api-key-error-1').show()
+                    return
+                }
+                $.get('https://api.ratingposterdb.com/' + apiKey + '/isValid', function( data ) {
+                    if ((data || {}).valid) {
+                        var tier = 1
+                        if (apiKey.startsWith('t2-'))
+                            tier = 2
+                        else if (apiKey.startsWith('t3-'))
+                            tier = 3
+                        else if (apiKey.startsWith('t4-'))
+                            tier = 4
+                        $('#top-links').hide()
+                        $('#api-key-form').hide()
+                        $('#api-key-success-msg').text('Successfully loaded Tier ' + tier + ' API Key!')
+                        $('#api-key-success').show()
+                        if (tier == 1) {
+                            $('#note-tier-1').show()
+                            $('#checkbox-radio-option-one').prop('checked', true)
+                            $('#checkbox-radio-option-two').prop('disabled', true)
+                            $('#checkbox-radio-option-three').prop('disabled', true)
+                            $('#checkbox-radio-option-four').prop('disabled', true)
+                        }
+                        $('#addon-install').attr('href', 'stremio://1fe84bc728af-rpdb.baby-beamup.club/' + apiKey + '/poster-default/movie_series_search_other/manifest.json')
+                        $('#opts-holder').show()
+                    } else {
+                        $('#api-key').val('')
+                        $('#api-key-error-2').show()
+                    }
+                }).fail(function() {
+                    $('#api-key').val('')
+                    $('#api-key-error-2').show()
+                });
+            }
+            $(document).ready(function() {
+                $('#opts-form input:radio').click(function() {
+                    if ($(this).val() === 'def-opts') {
+                        $('#adv-form').hide()
+                        $('#checkbox-radio-option-one').prop('checked', true)
+                        $('#catalogs-option-one').prop('checked', true)
+                        $('#catalogs-option-two').prop('checked', true)
+                        $('#catalogs-option-three').prop('checked', true)
+                        $('#catalogs-option-four').prop('checked', true)
+                        $('#addon-install').attr('href', 'stremio://1fe84bc728af-rpdb.baby-beamup.club/' + apiKey + '/poster-default/movie_series_search_other/manifest.json')
+                    } else if ($(this).val() === 'adv-opts') {
+                        $('#adv-form').show()
+                    } 
+                  });
+                $('#adv-opts-form input').on('change', function() {
+                   var posterType = $('input[name=optionsRadios]:checked', '#adv-opts-form').val();
+                   var catalogChoices = []
+                   $('.optionsCheckbox:checkbox:checked').each((ij, el) => {
+                        catalogChoices.push($(el).val())
+                   })
+                   $('#addon-install').attr('href', 'stremio://1fe84bc728af-rpdb.baby-beamup.club/' + apiKey + '/' + posterType + '/' + catalogChoices.join('_') + '/manifest.json')
+                });
+            })
+        </script>
+    </body>
+</html>
